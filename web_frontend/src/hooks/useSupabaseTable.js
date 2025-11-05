@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getSupabaseClient } from '../lib/supabaseClient';
+import { isTableMissingError } from '../lib/api/_supabaseErrors';
 
 /**
  * PUBLIC_INTERFACE
@@ -90,7 +91,11 @@ export default function useSupabaseTable(
       const query = buildQuery();
       const { data, error, count: totalCount } = await query;
       if (error) {
-        setError(error.message || 'Failed to fetch data');
+        if (isTableMissingError(error)) {
+          setError('Table missing in Supabase');
+        } else {
+          setError(error.message || 'Failed to fetch data');
+        }
         setData([]);
         setTotal(null);
       } else {
@@ -98,7 +103,12 @@ export default function useSupabaseTable(
         setTotal(typeof totalCount === 'number' ? totalCount : null);
       }
     } catch (err) {
-      setError(err?.message || String(err));
+      const msg = String(err?.message || err);
+      if (/Supabase configuration missing|Supabase not configured/i.test(msg)) {
+        setError('Supabase not configured');
+      } else {
+        setError(msg);
+      }
       setData([]);
       setTotal(null);
     } finally {

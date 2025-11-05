@@ -39,7 +39,11 @@ export async function listProducts({ search = '', category = '', page = 1, pageS
     const { data, error, count } = await query.order('created_at', { ascending: false }).range(from, to);
 
     // Handle table missing gracefully
-    if (error?.code === '42P01' || /relation .* does not exist/i.test(error?.message || '')) {
+    if (
+      error?.code === '42P01' ||
+      /relation .* does not exist/i.test(error?.message || '') ||
+      /Could not find the table .* in the schema cache/i.test(error?.message || '')
+    ) {
       return { data: [], count: 0, error: new Error('Products table missing'), status: 'TABLE_MISSING' };
     }
 
@@ -62,7 +66,11 @@ export async function getProductById(id) {
   try {
     const { data, error } = await supabase.from(TABLE).select('*').eq('id', id).single();
 
-    if (error?.code === '42P01' || /relation .* does not exist/i.test(error?.message || '')) {
+    if (
+      error?.code === '42P01' ||
+      /relation .* does not exist/i.test(error?.message || '') ||
+      /Could not find the table .* in the schema cache/i.test(error?.message || '')
+    ) {
       return { data: null, error: new Error('Products table missing'), status: 'TABLE_MISSING' };
     }
 

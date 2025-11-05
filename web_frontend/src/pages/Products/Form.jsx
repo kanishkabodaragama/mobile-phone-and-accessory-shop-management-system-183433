@@ -140,7 +140,7 @@ function getFriendlyError(err) {
   if (/Supabase not configured/i.test(m)) {
     return 'Supabase is not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY.';
   }
-  if (/table missing/i.test(m)) {
+  if (/table missing/i.test(m) || /Could not find the table/i.test(m)) {
     return 'Products table is missing in Supabase. Please create the "products" table.';
   }
   return m || 'Request failed.';
