@@ -1,62 +1,62 @@
-# Supabase Setup (Frontend Notes)
+# Supabase Setup (Frontend) — Schema Alignment and Verification
 
-Ensure these environment variables are set:
+The backend schema has been audited and aligned by automation. Use this section to verify or re-apply changes if needed.
+
+Environment variables required (in web_frontend/.env):
 - REACT_APP_SUPABASE_URL
 - REACT_APP_SUPABASE_KEY
 
-Schema alignment completed (Full backend):
-- Products: added cost_price, reorder_level; unique index on sku; updated_at trigger.
-- Customers: ensured primary key and index on phone.
-- Sales: added/verified customer_name, optional customer_id (FK -> customers), customer_phone, payment_method default 'Cash', monetary fields subtotal, tax, total, also total_amount/tax_amount/discount_amount for compatibility, status, invoice_no with unique index; created_at index.
-- Sale Items: ensured line_total, indexes on sale_id and product_id; FKs to sales (cascade) and products (restrict).
-- Service Tickets: ensured device, issue, status default, assigned_tech, closed_at; FK to customers.
-- Warranties and Warranty Claims: ensured typical fields; claim -> warranty FK.
-- RLS enabled and basic authenticated CRUD policies across all tables.
-- PostgREST schema cache reloaded.
+If missing, the app will boot with mock/fallback data in many modules.
 
-The backend now includes:
-- public.products (id, name, sku [unique], category, price, cost_price, stock, reorder_level, created_at, updated_at)
-- public.customers (id, name, email, phone [indexed], address, created_at, updated_at)
-- public.sales (id, invoice_no [unique], customer_id [FK], customer_name, customer_phone, payment_method, subtotal, tax, total, total_amount, tax_amount, discount_amount, status, created_at, created_by)
-- public.sale_items (id, sale_id [FK], product_id [FK], quantity, unit_price, line_total, created_at)
-- public.service_tickets (id, customer_id [FK], customer_name, device, issue, status, assigned_tech, created_at, updated_at, closed_at)
-- public.warranties (id, imei, sku, serial, receipt_no, customer_name, customer_phone, purchase_date, warranty_period_months)
-- public.warranty_claims (id, warranty_id [FK], imei, sku, receipt_no, issue_description, status, customer_name, customer_phone, created_at, updated_at)
+Tables and columns ensured
+- products: id, name, sku unique (nullable), category, price, stock, created_at, updated_at
+- customers: id, name, phone, email, address, notes, created_at, updated_at
+- sales: id, created_at, customer_name, customer_id (FK customers), subtotal, tax, total (trigger-filled), payment_method
+- sale_items: id, sale_id (FK sales), product_id (FK products), qty (or quantity mapped), unit_price, line_total (trigger-filled), created_at
+- service_tickets: id, device, issue, status, assigned_tech, customer_id (FK customers), created_at, updated_at, closed_at
+- warranties: id, product_sku, imei, warranty_period_months, purchase_date, customer_id (FK customers)
+- warranty_claims: id, warranty_id (FK warranties), status, claim_date, resolution_note, created_at, updated_at
+- settings: id, shop_name, tax_rate, currency, created_at, updated_at
 
-Notes for POS flow:
-- src/lib/api/sales.js createSaleWithItems expects sales and sale_items to exist and be writable by authenticated users.
-- Ensure your Supabase Authentication has at least one user account; sign in via the app before testing POS.
-- Sales supports captured-at-sale fields (customer_name/phone) and optional relational link (customer_id).
+RLS and policies
+- RLS enabled on all above tables with basic authenticated policies for select/insert/update.
 
-If you encounter permission errors, verify:
-1) You are authenticated in the app.
-2) RLS policies exist on the respective table(s) for the authenticated role.
-3) Environment variables are correctly set.
+Indexes and FKs
+- Unique partial index on products(sku) where sku is not null
+- Common indexes on FK columns and frequently filtered fields (created_at, status)
+- FKs:
+  - sales.customer_id -> customers(id)
+  - sale_items.sale_id -> sales(id) ON DELETE CASCADE
+  - sale_items.product_id -> products(id)
+  - service_tickets.customer_id -> customers(id)
+  - warranties.customer_id -> customers(id)
+  - warranty_claims.warranty_id -> warranties(id) ON DELETE CASCADE
 
-Recommended Verification SQL:
-```sql
--- Tables
-select table_name from information_schema.tables 
-where table_schema='public' and table_name in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims');
+PostgREST reload
+- select pg_notify('pgrst','reload schema');
 
--- Key columns on sales
-select column_name, data_type from information_schema.columns
-where table_schema='public' and table_name='sales'
-  and column_name in ('invoice_no','customer_name','customer_phone','payment_method','subtotal','tax','total','total_amount','tax_amount','discount_amount','status');
+Verification checklist
+Run these in Supabase SQL editor:
 
--- Foreign keys presence
-select conname, conrelid::regclass as table_name 
-from pg_constraint 
-where conname in ('sales_customer_fk','sale_items_sale_fk','sale_items_product_fk','service_tickets_customer_fk','warranty_claims_warranty_fk');
+- Presence of tables:
+  select table_name from information_schema.tables where table_schema='public' and table_name in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims','settings');
 
--- RLS policies
-select schemaname, tablename, policyname from pg_policies
-where schemaname='public' and tablename in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims');
-```
+- Columns example:
+  select column_name, data_type from information_schema.columns where table_schema='public' and table_name='sales';
 
-Operational Notes:
-- After any schema change outside migrations, run:
-```sql
-select pg_notify('pgrst', 'reload schema');
-```
-to refresh the PostgREST schema cache used by the API gateway.
+- Indexes example:
+  select indexname, indexdef from pg_indexes where schemaname='public' and tablename='products';
+
+- FKs example:
+  select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid='public.sale_items'::regclass;
+
+- RLS enabled:
+  select relname, relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and relname in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims','settings');
+
+- Policies:
+  select polname, polcmd, polroles, polqual, polwithcheck from pg_policy where schemaname='public' and tablename in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims','settings');
+
+Notes
+- If you add OAuth providers, configure redirect URLs in Supabase.
+- Frontend uses supabase-js and environment variables; never hardcode URLs.
+- Reports gracefully degrade to mock data if schema or permissions deny access.
