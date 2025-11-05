@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../router/ProtectedRoute';
 import SignIn from '../pages/Auth/SignIn';
+import Dashboard from '../pages/Dashboard';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -18,7 +19,7 @@ export default function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Page title="Dashboard" />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
