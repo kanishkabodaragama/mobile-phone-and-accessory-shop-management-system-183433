@@ -7,6 +7,7 @@ import ProductsList from '../pages/Products/List';
 import SalesPOS from '../pages/Sales/POS';
 import SalesOrders from '../pages/Sales/Orders';
 import ServiceTickets from '../pages/Services/Tickets';
+import CustomersList from '../pages/Customers/List';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -83,7 +84,7 @@ export default function AppRoutes() {
         path="/customers"
         element={
           <ProtectedRoute>
-            <Page title="Customers" />
+            <CustomersList />
           </ProtectedRoute>
         }
       />
