@@ -10,6 +10,10 @@ const SALES_TABLE = 'sales';
 const SALE_ITEMS_TABLE = 'sale_items';
 const PRODUCTS_TABLE = 'products';
 
+// Columns expected in DB (documentation reference)
+// sales: invoice_no, customer_name, customer_phone, customer_id (nullable), subtotal, tax, total, payment_method, created_at
+// sale_items: sale_id, product_id, quantity, unit_price, line_total
+
 /**
  * Map Supabase or JS errors to friendly messages while preserving codes where available.
  */
@@ -47,7 +51,9 @@ export async function listSales({ search = '', page = 1, pageSize = 10 } = {}) {
   }
 
   try {
-    let query = supabase.from(SALES_TABLE).select('*', { count: 'exact' });
+    let query = supabase
+      .from(SALES_TABLE)
+      .select('id, invoice_no, customer_name, customer_phone, customer_id, subtotal, tax, total, payment_method, created_at', { count: 'exact' });
     if (search) {
       query = query.or(`invoice_no.ilike.%${search}%,customer_name.ilike.%${search}%`);
     }
@@ -132,6 +138,26 @@ export async function createSaleWithItems(payload) {
     return { data: null, error: normalizeError('Supabase not configured'), status: 'NO_SUPABASE' };
   }
 
+  // Validate items
+  const rawItems = Array.isArray(payload?.items) ? payload.items : [];
+  const filteredItems = rawItems
+    .map(it => ({
+      product_id: it.product_id,
+      quantity: Number(it.quantity || 0),
+      unit_price: Number(it.unit_price || 0),
+    }))
+    .filter(it => it.product_id && it.quantity > 0 && Number.isFinite(it.unit_price));
+
+  if (filteredItems.length === 0) {
+    return { data: null, error: normalizeError('No valid items to create a sale'), status: 'INVALID_INPUT' };
+  }
+
+  // Compute totals
+  const subtotal = filteredItems.reduce((sum, it) => sum + (it.quantity * it.unit_price), 0);
+  // For now, tax is 0; could be enhanced by settings later.
+  const tax = 0;
+  const total = subtotal + tax;
+
   const now = new Date();
   const invoiceNo = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
     now.getDate()
@@ -141,8 +167,11 @@ export async function createSaleWithItems(payload) {
     invoice_no: invoiceNo,
     customer_name: payload.customer_name || null,
     customer_phone: payload.customer_phone || null,
+    customer_id: payload.customer_id || null,
+    subtotal: Number(subtotal.toFixed(2)),
+    tax: Number(tax.toFixed(2)),
+    total: Number(total.toFixed(2)),
     payment_method: payload.payment_method || 'Cash',
-    total_amount: Number(payload.total_amount || 0),
   };
 
   let createdSale = null;
@@ -151,7 +180,7 @@ export async function createSaleWithItems(payload) {
     const { data: sale, error: saleErr } = await supabase.from(SALES_TABLE).insert(saleRow).select().single();
     if (saleErr) {
       if (isTableMissingError(saleErr)) {
-        return { data: null, error: normalizeError('Sales tables missing'), status: 'TABLE_MISSING' };
+        return { data: null, error: normalizeError('Sales table missing or columns not aligned'), status: 'TABLE_MISSING' };
       }
       if (isPolicyDeniedError(saleErr)) {
         return { data: null, error: normalizeError('RLS policy prevents creating sales'), status: 'POLICY_BLOCKED' };
@@ -161,34 +190,32 @@ export async function createSaleWithItems(payload) {
     createdSale = sale;
 
     // Insert items
-    const itemsPayload = (payload.items || []).map((it) => ({
+    const itemsPayload = filteredItems.map((it) => ({
       sale_id: sale.id,
       product_id: it.product_id,
-      quantity: Number(it.quantity || 0),
-      unit_price: Number(it.unit_price || 0),
-      line_total: Number(it.quantity || 0) * Number(it.unit_price || 0),
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+      line_total: Number((it.quantity * it.unit_price).toFixed(2)),
     }));
 
-    if (itemsPayload.length > 0) {
-      const { error: itemsErr } = await supabase.from(SALE_ITEMS_TABLE).insert(itemsPayload);
-      if (itemsErr) {
-        // cleanup sale to avoid orphaned sale without items
-        try {
-          await supabase.from(SALES_TABLE).delete().eq('id', sale.id);
-        } catch {
-          // ignore cleanup failure
-        }
-        if (isTableMissingError(itemsErr)) {
-          return { data: null, error: normalizeError('Sales items table missing'), status: 'TABLE_MISSING' };
-        }
-        if (isPolicyDeniedError(itemsErr)) {
-          return { data: null, error: normalizeError('RLS policy prevents creating sale items'), status: 'POLICY_BLOCKED' };
-        }
-        return { data: null, error: itemsErr, status: 'ERROR' };
+    const { error: itemsErr } = await supabase.from(SALE_ITEMS_TABLE).insert(itemsPayload);
+    if (itemsErr) {
+      // cleanup sale to avoid orphaned sale without items
+      try {
+        await supabase.from(SALES_TABLE).delete().eq('id', sale.id);
+      } catch {
+        // ignore cleanup failure
       }
+      if (isTableMissingError(itemsErr)) {
+        return { data: null, error: normalizeError('sale_items table missing or columns not aligned'), status: 'TABLE_MISSING' };
+      }
+      if (isPolicyDeniedError(itemsErr)) {
+        return { data: null, error: normalizeError('RLS policy prevents creating sale items'), status: 'POLICY_BLOCKED' };
+      }
+      return { data: null, error: itemsErr, status: 'ERROR' };
     }
 
-    // Decrement product stocks
+    // Decrement product stocks (client-side safety; DB triggers also adjust if present)
     for (const it of itemsPayload) {
       const qty = Number(it.quantity || 0);
       if (!it.product_id || qty <= 0) continue;
@@ -201,14 +228,13 @@ export async function createSaleWithItems(payload) {
         .single();
 
       if (prodErr) {
-        // If product table missing, fail but keep sale; surface friendly error
         if (isTableMissingError(prodErr)) {
           return { data: sale, error: normalizeError('Products table missing for stock update'), status: 'TABLE_MISSING' };
         }
         if (isPolicyDeniedError(prodErr)) {
           return { data: sale, error: normalizeError('RLS policy prevents reading products for stock update'), status: 'POLICY_BLOCKED' };
         }
-        // Non-fatal: report but do not rollback entire sale
+        // Non-fatal
         // eslint-disable-next-line no-console
         console.warn('Failed to read product for stock update', prodErr);
         continue;
@@ -223,12 +249,12 @@ export async function createSaleWithItems(payload) {
         .eq('id', it.product_id);
 
       if (updErr) {
-        // Non-fatal: report but keep sale
         // eslint-disable-next-line no-console
         console.warn('Failed to update product stock', updErr);
       }
     }
 
+    // Return sale including invoice_no for UI toast and follow-up actions
     return { data: createdSale, error: null, status: 'OK' };
   } catch (err) {
     // Try to cleanup created sale on unexpected errors

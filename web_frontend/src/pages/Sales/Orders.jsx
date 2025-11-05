@@ -59,7 +59,7 @@ export default function SalesOrders() {
     { header: 'Customer', accessor: 'customer_name' },
     { header: 'Phone', accessor: 'customer_phone' },
     { header: 'Payment', accessor: 'payment_method' },
-    { header: 'Amount', accessor: 'total_amount', render: (r) => formatCurrency(r.total_amount) },
+    { header: 'Amount', accessor: 'total', render: (r) => formatCurrency(r.total) },
     { header: 'Date', accessor: 'created_at' },
   ];
 

@@ -186,7 +186,9 @@ export default function SaleModal({ open, onClose, onSuccess }) {
         customer_name: customer.name || null,
         customer_phone: customer.phone || null,
         payment_method: paymentMethod,
-        total_amount: totals.total,
+        subtotal: totals.subtotal ?? totals.total, // fallback
+        tax: totals.tax ?? 0,
+        total: totals.total,
         items: itemsPayload,
       });
 
