@@ -42,6 +42,20 @@ Verification checklist (SQL editor)
 - Columns example:
   select column_name, data_type, is_nullable, column_default from information_schema.columns where table_schema='public' and table_name='sales';
 
+- Verify sales columns include:
+  -- Must exist (types as shown)
+  -- invoice_no text
+  -- customer_name text
+  -- customer_phone text
+  -- customer_id uuid (FK to customers.id)
+  -- subtotal numeric(12,2) not null default 0
+  -- tax numeric(12,2) not null default 0
+  -- total numeric(12,2) not null default 0
+  -- payment_method text
+
+- PostgREST cache reload:
+  select pg_notify('pgrst','reload schema');
+
 - Indexes example:
   select indexname, indexdef from pg_indexes where schemaname='public' and tablename='products';
 
