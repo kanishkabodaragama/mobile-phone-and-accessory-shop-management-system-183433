@@ -163,6 +163,7 @@ export async function createSaleWithItems(payload) {
     now.getDate()
   ).padStart(2, '0')}-${Date.now().toString().slice(-6)}`;
 
+  // Align with public.sales schema: (invoice_no, customer_name, customer_phone, customer_id, subtotal, tax, total, payment_method)
   const saleRow = {
     invoice_no: invoiceNo,
     customer_name: payload.customer_name || null,

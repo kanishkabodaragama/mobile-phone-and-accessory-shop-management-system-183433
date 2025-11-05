@@ -195,8 +195,8 @@ export default function SaleModal({ open, onClose, onSuccess }) {
       if (res.error) {
         setSubmitError(getFriendlyError(res.error));
       } else {
-        addToast({ type: 'success', message: 'Sale created successfully.' });
         const invoice = res.data?.invoice_no || null;
+        addToast({ type: 'success', message: invoice ? `Sale ${invoice} created successfully.` : 'Sale created successfully.' });
         clearCart();
         if (typeof onSuccess === 'function') {
           onSuccess(invoice);
@@ -303,6 +303,9 @@ function getFriendlyError(err) {
   }
   if (/tables missing/i.test(m) || /table missing/i.test(m)) {
     return 'Sales tables are missing in Supabase. Please create the "sales" and "sale_items" tables.';
+  }
+  if (/columns not aligned/i.test(m)) {
+    return 'Supabase sales table columns mismatch. Expected columns: sales(invoice_no, customer_name, customer_phone, customer_id, subtotal, tax, total, payment_method) and sale_items(sale_id, product_id, quantity, unit_price, line_total).';
   }
   if (/RLS policy/i.test(m)) {
     return 'Row Level Security policy prevents this operation. Adjust Supabase policies.';

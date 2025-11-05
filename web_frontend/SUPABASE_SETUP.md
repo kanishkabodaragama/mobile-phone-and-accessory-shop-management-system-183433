@@ -29,7 +29,7 @@ Indexes and FKs
 Triggers and helper functions
 - Invoice: public.gen_invoice_no() + BEFORE INSERT trigger set_invoice_no_before_insert on sales; ensures invoice_no is always set.
 - Line total: BEFORE INSERT/UPDATE on sale_items computes line_total = round(unit_price * quantity, 2) to guarantee consistency.
-- Stock: AFTER INSERT/UPDATE/DELETE on sale_items adjusts products.stock using NEW.quantity / OLD.quantity; confirm trigger uses NEW.quantity and OLD.quantity fields specifically.
+- Stock: AFTER INSERT/UPDATE/DELETE on sale_items adjusts products.stock using NEW.quantity / OLD.quantity; confirm trigger uses NEW.quantity and OLD.quantity fields specifically. On INSERT: decrement by NEW.quantity; on UPDATE: decrement by (NEW.quantity - OLD.quantity); on DELETE: increment by OLD.quantity. Ensure these triggers are enabled and owned by the correct role.
 
 PostgREST reload
 - select pg_notify('pgrst','reload schema');
