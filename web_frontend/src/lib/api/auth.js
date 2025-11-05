@@ -25,6 +25,34 @@ export async function signInWithPassword({ email, password }) {
 
 /**
  * PUBLIC_INTERFACE
+ * signUpWithPassword
+ * Creates a new user using email/password via Supabase.
+ *
+ * Notes:
+ * - If email confirmations are enabled in Supabase, session will be null and a confirmation email is sent.
+ * - Uses REACT_APP_SITE_URL environment variable for emailRedirectTo to ensure correct redirect on verification.
+ *
+ * @param {{ email: string, password: string }} params
+ * @returns {Promise<{ data: any, error: import('@supabase/supabase-js').AuthError | null, emailConfirmationSent: boolean }>}
+ */
+// PUBLIC_INTERFACE
+export async function signUpWithPassword({ email, password }) {
+  /** This is a public function. */
+  const supabase = getSupabaseClient();
+  const siteUrl = process.env.REACT_APP_SITE_URL || window.location.origin;
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${siteUrl}/login`,
+    },
+  });
+  const emailConfirmationSent = !!data?.user && !data?.session;
+  return { data, error, emailConfirmationSent };
+}
+
+/**
+ * PUBLIC_INTERFACE
  * signOut
  * Signs out the current authenticated user.
  *
@@ -88,4 +116,5 @@ export default {
   signOut,
   getCurrentUser,
   onAuthStateChange,
+  signUpWithPassword,
 };

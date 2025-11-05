@@ -1,12 +1,31 @@
 import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../UI/Button';
 import Input from '../UI/Input';
 import { useUi } from '../../state/store';
+import useAuth from '../../hooks/useAuth';
+import { signOut } from '../../lib/api/auth';
 
 // PUBLIC_INTERFACE
 export default function Header() {
   /** This is a public function. App header with search and action buttons, plus toasts area. */
-  const { toasts, removeToast } = useUi();
+  const { toasts, removeToast, addToast } = useUi();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        addToast({ type: 'error', message: error.message || 'Failed to sign out' });
+      } else {
+        addToast({ type: 'success', message: 'Signed out' });
+        navigate('/login');
+      }
+    } catch (err) {
+      addToast({ type: 'error', message: err?.message || 'Failed to sign out' });
+    }
+  };
 
   useEffect(() => {
     const timers = toasts.map(t =>
@@ -24,6 +43,13 @@ export default function Header() {
       <div className="actions">
         <Button variant="ghost">New Sale</Button>
         <Button>+ Add Product</Button>
+        {!user ? (
+          <Link to="/login" style={{ textDecoration: 'none' }}>
+            <Button variant="ghost">Login</Button>
+          </Link>
+        ) : (
+          <Button variant="ghost" onClick={handleSignOut}>Sign out</Button>
+        )}
       </div>
 
       <div className="toasts" style={{ position: 'fixed', top: 12, right: 12, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 9999 }}>

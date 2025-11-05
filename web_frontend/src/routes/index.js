@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../router/ProtectedRoute';
 import SignIn from '../pages/Auth/SignIn';
+import Login from '../pages/Auth/Login';
+import SignUp from '../pages/Auth/SignUp';
 import Dashboard from '../pages/Dashboard';
 import ProductsList from '../pages/Products/List';
 import SalesPOS from '../pages/Sales/POS';
@@ -25,8 +27,11 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-      {/* Public route */}
-      <Route path="/signin" element={<SignIn />} />
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
+      {/* Back-compat: keep /signin but redirect to /login */}
+      <Route path="/signin" element={<Navigate to="/login" replace />} />
 
       {/* Protected application routes */}
       <Route
