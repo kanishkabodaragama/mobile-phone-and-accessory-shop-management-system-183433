@@ -1,48 +1,46 @@
 # Supabase Setup (Frontend) — Schema Alignment and Verification
 
-The backend schema has been audited and aligned by automation. Use this section to verify or re-apply changes if needed.
+The backend schema has been audited and aligned by automation. Use this to verify or re-apply changes if needed.
 
-Environment variables required (in web_frontend/.env):
+Required environment variables (in web_frontend/.env):
 - REACT_APP_SUPABASE_URL
 - REACT_APP_SUPABASE_KEY
 
 If missing, the app will boot with mock/fallback data in many modules.
 
 Tables and columns ensured
-- products: id, name, sku unique (nullable), category, price, stock, created_at, updated_at
-- customers: id, name, phone, email, address, notes, created_at, updated_at
-- sales: id, created_at, customer_name, customer_id (FK customers), subtotal, tax, total (trigger-filled), payment_method
-- sale_items: id, sale_id (FK sales), product_id (FK products), qty (or quantity mapped), unit_price, line_total (trigger-filled), created_at
-- service_tickets: id, device, issue, status, assigned_tech, customer_id (FK customers), created_at, updated_at, closed_at
-- warranties: id, product_sku, imei, warranty_period_months, purchase_date, customer_id (FK customers)
-- warranty_claims: id, warranty_id (FK warranties), status, claim_date, resolution_note, created_at, updated_at
-- settings: id, shop_name, tax_rate, currency, created_at, updated_at
+- products: id uuid pk default gen_random_uuid(), name text not null, sku text unique, category text, price numeric(12,2) default 0 not null, stock integer default 0 not null, created_at timestamptz default now(), updated_at timestamptz default now()
+- customers: id uuid pk default gen_random_uuid(), name text not null, phone text, email text, address text, notes text, created_at timestamptz default now()
+- sales: id uuid pk default gen_random_uuid(), created_at timestamptz default now(), customer_name text, customer_id uuid null references customers(id), subtotal numeric(12,2) default 0 not null, tax numeric(12,2) default 0 not null, total numeric(12,2) default 0 not null, payment_method text
+- sale_items: id uuid pk default gen_random_uuid(), sale_id uuid references sales(id) on delete cascade, product_id uuid references products(id), quantity integer not null, unit_price numeric(12,2) not null, line_total numeric(12,2) not null
+- service_tickets: id uuid pk default gen_random_uuid(), created_at timestamptz default now(), status text, device text, issue text, assigned_tech text, customer_id uuid references customers(id), sale_id uuid references sales(id)
+- warranties: id uuid pk default gen_random_uuid(), product_sku text, imei text, receipt_no text, customer_id uuid references customers(id), purchase_date date, warranty_period_months int, expires_at date
+- warranty_claims: id uuid pk default gen_random_uuid(), warranty_id uuid references warranties(id) on delete cascade, status text, created_at timestamptz default now(), notes text
+- settings: key text primary key, value jsonb
 
 RLS and policies
-- RLS enabled on all above tables with basic authenticated policies for select/insert/update.
+- RLS enabled on all above tables.
+- Policies created (if missing) to allow authenticated role to SELECT/INSERT/UPDATE/DELETE with using(true)/with check(true).
+  Tighten for production per your needs.
 
 Indexes and FKs
-- Unique partial index on products(sku) where sku is not null
-- Common indexes on FK columns and frequently filtered fields (created_at, status)
-- FKs:
-  - sales.customer_id -> customers(id)
-  - sale_items.sale_id -> sales(id) ON DELETE CASCADE
-  - sale_items.product_id -> products(id)
-  - service_tickets.customer_id -> customers(id)
-  - warranties.customer_id -> customers(id)
-  - warranty_claims.warranty_id -> warranties(id) ON DELETE CASCADE
+- products(sku, category)
+- sales(customer_id, created_at)
+- sale_items(sale_id, product_id)
+- customers(name)
+- service_tickets(customer_id, status)
+- warranties(customer_id, product_sku)
+- warranty_claims(warranty_id)
 
 PostgREST reload
 - select pg_notify('pgrst','reload schema');
 
-Verification checklist
-Run these in Supabase SQL editor:
-
+Verification checklist (SQL editor)
 - Presence of tables:
   select table_name from information_schema.tables where table_schema='public' and table_name in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims','settings');
 
 - Columns example:
-  select column_name, data_type from information_schema.columns where table_schema='public' and table_name='sales';
+  select column_name, data_type, is_nullable, column_default from information_schema.columns where table_schema='public' and table_name='sales';
 
 - Indexes example:
   select indexname, indexdef from pg_indexes where schemaname='public' and tablename='products';
@@ -57,6 +55,9 @@ Run these in Supabase SQL editor:
   select polname, polcmd, polroles, polqual, polwithcheck from pg_policy where schemaname='public' and tablename in ('products','customers','sales','sale_items','service_tickets','warranties','warranty_claims','settings');
 
 Notes
-- If you add OAuth providers, configure redirect URLs in Supabase.
+- If you add OAuth providers, configure redirect URLs in Supabase (development and production).
 - Frontend uses supabase-js and environment variables; never hardcode URLs.
-- Reports gracefully degrade to mock data if schema or permissions deny access.
+- Reporting APIs gracefully degrade to mock data if schema or permissions deny access.
+
+Migration file reference
+- See supabase/migrations/2025-11-05-align-schema.sql for the idempotent DDL used by automation.
