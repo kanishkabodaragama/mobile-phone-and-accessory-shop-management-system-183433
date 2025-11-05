@@ -6,6 +6,7 @@ import Dashboard from '../pages/Dashboard';
 import ProductsList from '../pages/Products/List';
 import SalesPOS from '../pages/Sales/POS';
 import SalesOrders from '../pages/Sales/Orders';
+import ServiceTickets from '../pages/Services/Tickets';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -65,6 +66,18 @@ export default function AppRoutes() {
             <Page title="Services & Repairs" />
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/services/tickets"
+        element={
+          <ProtectedRoute>
+            <ServiceTickets />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/services/*"
+        element={<Navigate to="/services/tickets" replace />}
       />
       <Route
         path="/customers"

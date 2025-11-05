@@ -7,7 +7,7 @@ const navItems = [
   { to: '/products', label: 'Products', icon: '📦' },
   { to: '/sales/pos', label: 'Sales (POS)', icon: '🧾' },
   { to: '/sales/orders', label: 'Sales Orders', icon: '🗂️' },
-  { to: '/services', label: 'Services', icon: '🛠️' },
+  { to: '/services/tickets', label: 'Services', icon: '🛠️' },
   { to: '/customers', label: 'Customers', icon: '👥' },
   { to: '/warranties', label: 'Warranties', icon: '🛡️' },
   { to: '/reports', label: 'Reports', icon: '📈' },
