@@ -7,6 +7,7 @@ import Table from '../components/UI/Table';
 import LineChart from '../components/Charts/LineChart';
 import BarChart from '../components/Charts/BarChart';
 import DonutChart from '../components/Charts/DonutChart';
+import SaleModal from '../components/Sales/SaleModal';
 
 /**
  * PUBLIC_INTERFACE
@@ -26,6 +27,7 @@ export default function Dashboard() {
     start: getISODateNDaysAgo(7),
     end: getISODateNDaysAgo(0),
   });
+  const [showSaleModal, setShowSaleModal] = useState(false);
 
   // Mock helpers to simulate derived metrics and lists
   const { kpis, recentSales, topProducts } = useMemo(() => {
@@ -106,6 +108,7 @@ export default function Dashboard() {
           <Button variant="ghost" onClick={() => setRange({ start: getISODateNDaysAgo(30), end: getISODateNDaysAgo(0) })}>
             Last 30 days
           </Button>
+          <Button onClick={() => setShowSaleModal(true)}>Create Sale</Button>
         </div>
       </div>
 
@@ -154,6 +157,13 @@ export default function Dashboard() {
           <Table columns={topProductsColumns} data={topProducts} />
         </Card>
       </div>
+      <SaleModal
+        open={showSaleModal}
+        onClose={() => setShowSaleModal(false)}
+        onSuccess={() => {
+          setShowSaleModal(false);
+        }}
+      />
     </div>
   );
 }

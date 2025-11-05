@@ -5,6 +5,7 @@ import Button from '../../components/UI/Button';
 import Table from '../../components/UI/Table';
 import Spinner from '../../components/UI/Spinner';
 import { listSales } from '../../lib/api/sales';
+import SaleModal from '../../components/Sales/SaleModal';
 
 /**
  * PUBLIC_INTERFACE
@@ -62,10 +63,15 @@ export default function SalesOrders() {
     { header: 'Date', accessor: 'created_at' },
   ];
 
+  const [showSaleModal, setShowSaleModal] = useState(false);
+
   return (
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="page-title">Sales Orders</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button onClick={() => setShowSaleModal(true)}>Create Sale</Button>
+        </div>
       </div>
 
       <Card>
@@ -100,6 +106,16 @@ export default function SalesOrders() {
           </>
         )}
       </Card>
+
+      <SaleModal
+        open={showSaleModal}
+        onClose={() => setShowSaleModal(false)}
+        onSuccess={() => {
+          setShowSaleModal(false);
+          setPage(1);
+          fetchData();
+        }}
+      />
     </div>
   );
 }
