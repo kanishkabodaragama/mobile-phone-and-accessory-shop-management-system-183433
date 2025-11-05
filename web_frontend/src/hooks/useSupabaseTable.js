@@ -1,72 +1,102 @@
-import { useEffect, useMemo, useState } from 'react';
-import { listProducts } from '../lib/api/products';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import supabase from '../lib/supabaseClient';
 
 /**
  * PUBLIC_INTERFACE
  * useSupabaseTable
- * Generic-ish table hook for paginated, searchable data backed by Supabase.
- * For now, specialized to products via products API to keep scope minimal.
+ * Generic Supabase table hook supporting filters, sorting, and range pagination.
  *
  * Params:
- *  - initialQuery: { search?: string, category?: string, page?: number, pageSize?: number }
+ *  - table: string
+ *  - options: {
+ *      select?: string,
+ *      filters?: Array<[column: string, op: string, value: any]>,
+ *      orderBy?: { column: string, ascending?: boolean },
+ *      page?: number,
+ *      pageSize?: number,
+ *      count?: 'exact'|'planned'|'estimated'|null
+ *    }
  *
  * Returns:
- *  - data, count, loading, error
- *  - query state: search, category, page, pageSize
- *  - setters: setSearch, setCategory, setPage, setPageSize, refresh
+ *  - { data, total, loading, error, refetch }
  */
 // PUBLIC_INTERFACE
-export default function useSupabaseTable(initialQuery = {}) {
-  /** This is a public function. */
-  const [search, setSearch] = useState(initialQuery.search || '');
-  const [category, setCategory] = useState(initialQuery.category || '');
-  const [page, setPage] = useState(initialQuery.page || 1);
-  const [pageSize, setPageSize] = useState(initialQuery.pageSize || 10);
-
+export default function useSupabaseTable(
+  table,
+  { select = '*', filters = [], orderBy = null, page = 1, pageSize = 20, count = 'exact' } = {}
+) {
+  /** Query a Supabase table with filter/sort and pagination. */
   const [data, setData] = useState([]);
-  const [count, setCount] = useState(0);
+  const [total, setTotal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const params = useMemo(() => ({ search, category, page, pageSize }), [search, category, page, pageSize]);
+  const range = useMemo(() => {
+    const from = (Math.max(1, page) - 1) * pageSize;
+    const to = from + pageSize - 1;
+    return { from, to };
+  }, [page, pageSize]);
 
-  const fetchData = async () => {
+  const buildQuery = useCallback(() => {
+    let query = supabase.from(table).select(select, { count });
+
+    // Apply filters (support several common ops)
+    (filters || []).forEach(([column, operator, value]) => {
+      if (value === undefined || value === null || value === '') return;
+      switch (operator) {
+        case 'eq': query = query.eq(column, value); break;
+        case 'neq': query = query.neq(column, value); break;
+        case 'ilike': query = query.ilike(column, `%${value}%`); break;
+        case 'like': query = query.like(column, value); break;
+        case 'gt': query = query.gt(column, value); break;
+        case 'gte': query = query.gte(column, value); break;
+        case 'lt': query = query.lt(column, value); break;
+        case 'lte': query = query.lte(column, value); break;
+        case 'is': query = query.is(column, value); break;
+        case 'in': query = query.in(column, Array.isArray(value) ? value : [value]); break;
+        default: break;
+      }
+    });
+
+    if (orderBy?.column) {
+      query = query.order(orderBy.column, { ascending: orderBy.ascending ?? true });
+    }
+
+    if (pageSize != null) {
+      query = query.range(range.from, range.to);
+    }
+
+    return query;
+  }, [table, select, filters, orderBy, range.from, range.to, count, pageSize]);
+
+  const refetch = useCallback(async () => {
+    if (!table) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await listProducts(params);
-      setData(res.data || []);
-      setCount(res.count || 0);
-      if (res.status !== 'OK' && res.error) {
-        setError(res.error);
+      const query = buildQuery();
+      const { data, error, count: totalCount } = await query;
+      if (error) {
+        setError(error.message || 'Failed to fetch data');
+        setData([]);
+        setTotal(null);
+      } else {
+        setData(data || []);
+        setTotal(typeof totalCount === 'number' ? totalCount : null);
       }
     } catch (err) {
-      setError(err);
+      setError(err?.message || String(err));
       setData([]);
-      setCount(0);
+      setTotal(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildQuery, table]);
 
   useEffect(() => {
-    fetchData();
+    refetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, category, page, pageSize]);
+  }, [table, select, JSON.stringify(filters), JSON.stringify(orderBy), range.from, range.to, count]);
 
-  return {
-    data,
-    count,
-    loading,
-    error,
-    search,
-    category,
-    page,
-    pageSize,
-    setSearch,
-    setCategory,
-    setPage,
-    setPageSize,
-    refresh: fetchData,
-  };
+  return { data, total, loading, error, refetch };
 }

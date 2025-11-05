@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import logo from '../../assets/logo.svg';
+import { useUi } from '../../state/store';
 
 const mainNav = [
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -21,12 +22,19 @@ const settingsNav = [
 
 // PUBLIC_INTERFACE
 export default function Sidebar() {
-  /** This is a public function. Sidebar navigation for the app. */
+  /** This is a public function. Sidebar navigation for the app with collapse control. */
+  const { sidebarCollapsed, toggleSidebar } = useUi();
+
   return (
-    <>
-      <div className="brand flex items-center gap-2 px-4 py-3">
-        <img src={logo} width="24" height="24" alt="Logo" />
-        <span className="font-semibold text-blue-900">Ocean POS</span>
+    <div className={`sidebar-inner ${sidebarCollapsed ? 'collapsed' : ''}`}>
+      <div className="brand flex items-center gap-2 px-4 py-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src={logo} width="24" height="24" alt="Logo" />
+          {!sidebarCollapsed && <span className="font-semibold text-blue-900">Ocean POS</span>}
+        </div>
+        <button aria-label="Toggle sidebar" className="toggle-btn" onClick={toggleSidebar}>
+          {sidebarCollapsed ? '»' : '«'}
+        </button>
       </div>
       <nav className="nav flex flex-col gap-1 px-2">
         {mainNav.map(item => (
@@ -38,12 +46,12 @@ export default function Sidebar() {
             }
           >
             <span aria-hidden="true">{item.icon}</span>
-            <span>{item.label}</span>
+            {!sidebarCollapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
 
         <div className="pt-4 mt-4 border-t border-gray-200">
-          <div className="px-4 pb-2 text-xs font-semibold text-gray-500 uppercase">Settings</div>
+          {!sidebarCollapsed && <div className="px-4 pb-2 text-xs font-semibold text-gray-500 uppercase">Settings</div>}
           {settingsNav.map(item => (
             <NavLink
               key={item.to}
@@ -52,11 +60,11 @@ export default function Sidebar() {
                 `block px-4 py-2 rounded-md hover:bg-blue-50 ${isActive ? 'bg-blue-100 text-blue-800' : 'text-gray-700'}`
               }
             >
-              {item.label}
+              {!sidebarCollapsed && item.label}
             </NavLink>
           ))}
         </div>
       </nav>
-    </>
+    </div>
   );
 }

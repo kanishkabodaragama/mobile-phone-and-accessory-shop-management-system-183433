@@ -8,12 +8,13 @@ import Modal from '../../components/UI/Modal';
 import Spinner from '../../components/UI/Spinner';
 import { listProducts } from '../../lib/api/products';
 import { createSaleWithItems } from '../../lib/api/sales';
+import { useCart, useUi } from '../../state/store';
 
 /**
  * PUBLIC_INTERFACE
  * SalesPOS
  * Point of Sale page: add products to cart, adjust quantities, capture customer and payment, and complete sale.
- * Gracefully handles missing Supabase or tables by showing friendly messages and keeping UI functional where possible.
+ * Uses global cart slice from shared store.
  */
 // PUBLIC_INTERFACE
 export default function SalesPOS() {
@@ -23,7 +24,7 @@ export default function SalesPOS() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState(null);
 
-  const [cart, setCart] = useState([]); // [{product, quantity, unit_price}]
+  const { items, addItem, updateItem, removeItem, clearCart, totals, setPayment } = useCart();
   const [customer, setCustomer] = useState({ name: '', phone: '' });
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [submitting, setSubmitting] = useState(false);
@@ -31,6 +32,7 @@ export default function SalesPOS() {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [lastInvoice, setLastInvoice] = useState(null);
+  const { addToast } = useUi();
 
   // Load products to pick from
   useEffect(() => {
@@ -63,41 +65,29 @@ export default function SalesPOS() {
   }, [search]);
 
   function addToCart(product) {
-    setCart((prev) => {
-      const idx = prev.findIndex((p) => p.product.id === product.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        const currentQty = next[idx].quantity;
-        next[idx] = { ...next[idx], quantity: currentQty + 1 };
-        return next;
-      }
-      return [...prev, { product, quantity: 1, unit_price: Number(product.price || 0) }];
-    });
+    addItem({ id: product.id, name: product.name, price: Number(product.price || 0), qty: 1 });
   }
 
   function updateQty(productId, qty) {
     const q = Math.max(0, Math.floor(Number(qty) || 0));
-    setCart((prev) => prev.map((it) => (it.product.id === productId ? { ...it, quantity: q } : it)));
+    updateItem(productId, { qty: q });
   }
 
-  function removeFromCart(productId) {
-    setCart((prev) => prev.filter((it) => it.product.id !== productId));
+  function onRemove(productId) {
+    removeItem(productId);
   }
 
-  function clearCart() {
-    setCart([]);
-    setSubmitError('');
-    setLastInvoice(null);
-  }
-
-  const totals = useMemo(() => {
-    const sub = cart.reduce((sum, it) => sum + it.quantity * Number(it.unit_price || 0), 0);
-    return { subtotal: sub, total: sub };
-  }, [cart]);
+  const cartRows = useMemo(() => {
+    return items.map(it => ({
+      product: { id: it.id, name: it.name, sku: it.sku },
+      quantity: it.qty,
+      unit_price: Number(it.price || 0),
+    }));
+  }, [items]);
 
   const cartColumns = [
     { header: 'Product', accessor: 'name', render: (row) => row.product.name },
-    { header: 'SKU', accessor: 'sku', render: (row) => row.product.sku },
+    { header: 'SKU', accessor: 'sku', render: (row) => row.product.sku ?? '-' },
     {
       header: 'Unit Price',
       accessor: 'unit_price',
@@ -126,7 +116,7 @@ export default function SalesPOS() {
       header: 'Actions',
       accessor: 'actions',
       render: (row) => (
-        <Button variant="ghost" onClick={() => removeFromCart(row.product.id)}>
+        <Button variant="ghost" onClick={() => onRemove(row.product.id)}>
           Remove
         </Button>
       ),
@@ -138,27 +128,28 @@ export default function SalesPOS() {
     setSubmitting(true);
     setSubmitError('');
 
-    const items = cart
-      .filter((it) => it.quantity > 0)
+    const itemsPayload = items
+      .filter((it) => it.qty > 0)
       .map((it) => ({
-        product_id: it.product.id,
-        quantity: it.quantity,
-        unit_price: Number(it.unit_price || 0),
+        product_id: it.id,
+        quantity: it.qty,
+        unit_price: Number(it.price || 0),
       }));
 
-    if (items.length === 0) {
+    if (itemsPayload.length === 0) {
       setSubmitting(false);
       setSubmitError('Cart is empty.');
       return;
     }
 
     try {
+      setPayment({ method: paymentMethod });
       const res = await createSaleWithItems({
         customer_name: customer.name || null,
         customer_phone: customer.phone || null,
         payment_method: paymentMethod,
         total_amount: totals.total,
-        items,
+        items: itemsPayload,
       });
 
       if (res.error) {
@@ -166,6 +157,7 @@ export default function SalesPOS() {
       } else {
         setLastInvoice(res.data?.invoice_no || null);
         clearCart();
+        addToast({ type: 'success', message: 'Sale completed successfully.' });
         // Optionally re-fetch products so stock reflects changes
         try {
           const latest = await listProducts({ search, page: 1, pageSize: 20 });
@@ -193,7 +185,7 @@ export default function SalesPOS() {
         <div className="page-title">Point of Sale</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="ghost" onClick={clearCart}>Clear Cart</Button>
-          <Button onClick={() => setShowConfirm(true)} disabled={cart.length === 0 || submitting}>
+          <Button onClick={() => setShowConfirm(true)} disabled={items.length === 0 || submitting}>
             {submitting ? 'Processing…' : 'Complete Sale'}
           </Button>
         </div>
@@ -237,7 +229,7 @@ export default function SalesPOS() {
         <div style={{ display: 'grid', gap: 12 }}>
           <Card>
             <div style={{ fontWeight: 700, marginBottom: 8 }}>Cart</div>
-            <Table columns={cartColumns} data={cart} />
+            <Table columns={cartColumns} data={cartRows} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 12 }}>
               <div>Subtotal: <strong>{formatCurrency(totals.subtotal)}</strong></div>
               <div>Total: <strong>{formatCurrency(totals.total)}</strong></div>
