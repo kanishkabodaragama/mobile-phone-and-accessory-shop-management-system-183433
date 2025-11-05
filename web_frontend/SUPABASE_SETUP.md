@@ -4,6 +4,10 @@ Ensure these environment variables are set:
 - REACT_APP_SUPABASE_URL
 - REACT_APP_SUPABASE_KEY
 
+Schema alignment completed (Sales):
+- sales now includes customer_name (text), optional customer_id (uuid, FK -> customers), monetary fields (subtotal, tax, total_amount or total), payment_method (text), created_at (timestamptz).
+- sale_items links to sales and products via FKs; indexes present.
+
 The backend now includes:
 - public.products (id, name, sku, category, price, cost_price, stock, reorder_level, timestamps)
 - public.customers (id, name, email, phone, address, timestamps)
