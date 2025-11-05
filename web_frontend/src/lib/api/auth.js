@@ -78,6 +78,11 @@ export function onAuthStateChange(callback) {
   return { data };
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * authApi
+ * Grouped export for authentication helpers.
+ */
 export default {
   signInWithPassword,
   signOut,

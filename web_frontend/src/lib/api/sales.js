@@ -243,6 +243,11 @@ export async function createSaleWithItems(payload) {
   }
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * salesApi
+ * Grouped export for sales helpers.
+ */
 const salesApi = {
   listSales,
   getSaleWithItems,

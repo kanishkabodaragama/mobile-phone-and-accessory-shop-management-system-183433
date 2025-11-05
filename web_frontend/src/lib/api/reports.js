@@ -437,6 +437,11 @@ export function exportToCsv(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * reportsApi
+ * Grouped export for reporting helpers (auto-fallbacks to mock data when Supabase unavailable).
+ */
 const reportsApi = {
   getSalesSummary,
   getInventorySummary,

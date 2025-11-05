@@ -245,6 +245,11 @@ export async function deleteServiceTicket(id) {
   }
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * servicesApi
+ * Grouped export for service tickets helpers.
+ */
 const servicesApi = {
   listServiceTickets,
   getServiceTicketById,

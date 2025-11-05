@@ -236,6 +236,11 @@ export async function deleteWarrantyClaim(id) {
   }
 }
 
+/**
+ * PUBLIC_INTERFACE
+ * warrantiesApi
+ * Grouped export for warranties and claims helpers.
+ */
 const warrantiesApi = {
   checkWarranty,
   listWarrantyClaims,

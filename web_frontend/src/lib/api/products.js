@@ -4,7 +4,10 @@ import getSupabaseClient from '../supabaseClient';
  * PUBLIC_INTERFACE
  * productsApi
  * Supabase CRUD helpers for 'products' table with graceful fallbacks when Supabase
- * is not configured or the table is missing. All methods return a consistent shape.
+ * is not configured or the table is missing. All methods return a consistent shape:
+ * - list: { data: Array, count: number, error: Error|null, status: 'OK'|'NO_SUPABASE'|'TABLE_MISSING'|'ERROR' }
+ * - get/create/update: { data: Object|null, error: Error|null, status: same }
+ * - delete: { error: Error|null, status: same }
  */
 const TABLE = 'products';
 

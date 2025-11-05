@@ -7,7 +7,12 @@ import { createClient } from '@supabase/supabase-js';
  * - REACT_APP_SUPABASE_URL
  * - REACT_APP_SUPABASE_KEY
  *
- * Note: Ensure these variables are provided in the environment (.env). Do not commit secrets.
+ * Behavior:
+ * - Throws an Error if variables are missing; API helpers catch this and return graceful fallbacks.
+ * - Uses a single instance cached on window.__SUPABASE_CLIENT to survive hot reloads.
+ *
+ * Security:
+ * - Do not commit secrets. Set values in .env (mapped in CI/CD).
  */
 // PUBLIC_INTERFACE
 export function getSupabaseClient() {
@@ -16,14 +21,11 @@ export function getSupabaseClient() {
   const key = process.env.REACT_APP_SUPABASE_KEY;
 
   if (!url || !key) {
-    // Provide a clear error for developers; avoid hard-coding secrets.
-    // We throw here to surface misconfiguration during development/build.
     throw new Error(
       'Supabase configuration missing. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY in the environment.'
     );
   }
 
-  // Store client on window.__SUPABASE_CLIENT to keep a single instance across hot reloads.
   if (!window.__SUPABASE_CLIENT) {
     window.__SUPABASE_CLIENT = createClient(url, key);
   }
