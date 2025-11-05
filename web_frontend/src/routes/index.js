@@ -8,6 +8,8 @@ import SalesPOS from '../pages/Sales/POS';
 import SalesOrders from '../pages/Sales/Orders';
 import ServiceTickets from '../pages/Services/Tickets';
 import CustomersList from '../pages/Customers/List';
+import WarrantyCheck from '../pages/Warranties/Check';
+import WarrantyClaims from '../pages/Warranties/Claims';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -92,7 +94,15 @@ export default function AppRoutes() {
         path="/warranties"
         element={
           <ProtectedRoute>
-            <Page title="Warranties" />
+            <WarrantyCheck />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/warranties/claims"
+        element={
+          <ProtectedRoute>
+            <WarrantyClaims />
           </ProtectedRoute>
         }
       />
