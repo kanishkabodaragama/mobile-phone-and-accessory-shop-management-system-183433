@@ -4,6 +4,8 @@ import ProtectedRoute from '../router/ProtectedRoute';
 import SignIn from '../pages/Auth/SignIn';
 import Dashboard from '../pages/Dashboard';
 import ProductsList from '../pages/Products/List';
+import SalesPOS from '../pages/Sales/POS';
+import SalesOrders from '../pages/Sales/Orders';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -37,6 +39,22 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <Page title="Sales" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sales/pos"
+        element={
+          <ProtectedRoute>
+            <SalesPOS />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sales/orders"
+        element={
+          <ProtectedRoute>
+            <SalesOrders />
           </ProtectedRoute>
         }
       />

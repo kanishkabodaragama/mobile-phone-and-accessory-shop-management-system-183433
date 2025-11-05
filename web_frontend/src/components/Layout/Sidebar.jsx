@@ -5,7 +5,8 @@ import logo from '../../assets/logo.svg';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/products', label: 'Products', icon: '📦' },
-  { to: '/sales', label: 'Sales', icon: '🧾' },
+  { to: '/sales/pos', label: 'Sales (POS)', icon: '🧾' },
+  { to: '/sales/orders', label: 'Sales Orders', icon: '🗂️' },
   { to: '/services', label: 'Services', icon: '🛠️' },
   { to: '/customers', label: 'Customers', icon: '👥' },
   { to: '/warranties', label: 'Warranties', icon: '🛡️' },
