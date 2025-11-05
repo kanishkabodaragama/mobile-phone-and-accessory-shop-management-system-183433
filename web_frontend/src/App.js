@@ -4,6 +4,7 @@ import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import AppRoutes from './routes';
 import { StoreProvider } from './state/store';
+import Toasts from './components/UI/Toasts';
 
 // PUBLIC_INTERFACE
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <main className="content">
           <AppRoutes />
         </main>
+        <Toasts />
       </div>
     </StoreProvider>
   );
