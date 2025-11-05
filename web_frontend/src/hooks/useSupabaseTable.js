@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import supabase from '../lib/supabaseClient';
+import { getSupabaseClient } from '../lib/supabaseClient';
 
 /**
  * PUBLIC_INTERFACE
@@ -37,7 +37,17 @@ export default function useSupabaseTable(
     return { from, to };
   }, [page, pageSize]);
 
+  const supabase = useMemo(() => {
+    try {
+      return getSupabaseClient();
+    } catch (e) {
+      return null;
+    }
+  }, []);
   const buildQuery = useCallback(() => {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
     let query = supabase.from(table).select(select, { count });
 
     // Apply filters (support several common ops)
@@ -74,6 +84,9 @@ export default function useSupabaseTable(
     setLoading(true);
     setError(null);
     try {
+      if (!supabase) {
+        throw new Error('Supabase not configured');
+      }
       const query = buildQuery();
       const { data, error, count: totalCount } = await query;
       if (error) {
@@ -91,7 +104,7 @@ export default function useSupabaseTable(
     } finally {
       setLoading(false);
     }
-  }, [buildQuery, table]);
+  }, [buildQuery, table, supabase]);
 
   useEffect(() => {
     refetch();
