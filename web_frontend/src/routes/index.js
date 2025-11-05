@@ -10,6 +10,10 @@ import ServiceTickets from '../pages/Services/Tickets';
 import CustomersList from '../pages/Customers/List';
 import WarrantyCheck from '../pages/Warranties/Check';
 import WarrantyClaims from '../pages/Warranties/Claims';
+import ReportsOverview from '../pages/Reports/Overview';
+import SalesReport from '../pages/Reports/SalesReport';
+import InventoryReport from '../pages/Reports/InventoryReport';
+import ServiceReport from '../pages/Reports/ServiceReport';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -110,7 +114,31 @@ export default function AppRoutes() {
         path="/reports"
         element={
           <ProtectedRoute>
-            <Page title="Reports & Analytics" />
+            <ReportsOverview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/sales"
+        element={
+          <ProtectedRoute>
+            <SalesReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/inventory"
+        element={
+          <ProtectedRoute>
+            <InventoryReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/services"
+        element={
+          <ProtectedRoute>
+            <ServiceReport />
           </ProtectedRoute>
         }
       />
