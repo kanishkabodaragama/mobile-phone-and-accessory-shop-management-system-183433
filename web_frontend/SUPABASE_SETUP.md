@@ -11,7 +11,7 @@ If missing, the app will boot with mock/fallback data in many modules.
 Tables and columns ensured (POS-related)
 - products: id uuid pk default gen_random_uuid(), name text not null, sku text, category text, price numeric(12,2) not null default 0, stock integer not null default 0, created_at timestamptz default now(), updated_at timestamptz default now()
 - customers: id uuid pk default gen_random_uuid(), name text, phone text, email text, address text, notes text, created_at timestamptz default now(), updated_at timestamptz default now()
-- sales: id uuid pk default gen_random_uuid(), invoice_no text, customer_name text, customer_phone text, customer_id uuid null references customers(id), subtotal numeric(12,2) not null default 0, tax numeric(12,2) not null default 0, total numeric(12,2) not null default 0, payment_method text, created_at timestamptz default now()
+- sales: id uuid pk default gen_random_uuid(), invoice_no text, customer_name text, customer_phone text, customer_id uuid null references customers(id) on update cascade on delete set null, subtotal numeric(12,2) not null default 0, tax numeric(12,2) not null default 0, total numeric(12,2) not null default 0, payment_method text, created_at timestamptz default now()
 - sale_items: id uuid pk default gen_random_uuid(), sale_id uuid references sales(id) on delete cascade, product_id uuid references products(id), quantity integer not null default 1, unit_price numeric(12,2) not null, line_total numeric(12,2) not null, created_at timestamptz default now()
 
 Other tables (services, warranties, settings) remain as before.
@@ -22,7 +22,7 @@ RLS and policies
   Tighten for production per your needs.
 
 Indexes and FKs
-- sales(customer_id, created_at)
+- sales(customer_id, created_at, invoice_no)
 - sale_items(sale_id, product_id)
 - customers(phone, email)
 
@@ -58,3 +58,6 @@ Notes
 
 Migration file reference
 - See supabase/migrations/2025-11-05-align-schema.sql for the idempotent DDL used by automation.
+
+Status
+- Alignment applied via SupabaseTools in this run; proceed to end-to-end testing in the POS flow (create sale, add items) to confirm stock adjustments and invoice generation.
