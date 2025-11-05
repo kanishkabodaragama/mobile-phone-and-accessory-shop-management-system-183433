@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../router/ProtectedRoute';
 import SignIn from '../pages/Auth/SignIn';
 import Dashboard from '../pages/Dashboard';
+import ProductsList from '../pages/Products/List';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -27,7 +28,7 @@ export default function AppRoutes() {
         path="/products"
         element={
           <ProtectedRoute>
-            <Page title="Products" />
+            <ProductsList />
           </ProtectedRoute>
         }
       />
