@@ -14,6 +14,9 @@ import ReportsOverview from '../pages/Reports/Overview';
 import SalesReport from '../pages/Reports/SalesReport';
 import InventoryReport from '../pages/Reports/InventoryReport';
 import ServiceReport from '../pages/Reports/ServiceReport';
+import GeneralSettings from '../pages/Settings/General';
+import UsersSettings from '../pages/Settings/Users';
+import IntegrationsSettings from '../pages/Settings/Integrations';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
@@ -82,10 +85,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/services/*"
-        element={<Navigate to="/services/tickets" replace />}
-      />
+      <Route path="/services/*" element={<Navigate to="/services/tickets" replace />} />
       <Route
         path="/customers"
         element={
@@ -142,11 +142,29 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Settings routes */}
       <Route
         path="/settings"
         element={
           <ProtectedRoute>
-            <Page title="Settings" />
+            <GeneralSettings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/users"
+        element={
+          <ProtectedRoute>
+            <UsersSettings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings/integrations"
+        element={
+          <ProtectedRoute>
+            <IntegrationsSettings />
           </ProtectedRoute>
         }
       />
