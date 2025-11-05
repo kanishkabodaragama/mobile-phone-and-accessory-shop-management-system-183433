@@ -1,20 +1,85 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from '../router/ProtectedRoute';
+import SignIn from '../pages/Auth/SignIn';
 
 // PUBLIC_INTERFACE
 export default function AppRoutes() {
-  /** This is a public function. Renders route placeholders for core modules. */
+  /** This is a public function. Renders application routes with auth protection on core modules. */
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/dashboard" element={<Page title="Dashboard" />} />
-      <Route path="/products" element={<Page title="Products" />} />
-      <Route path="/sales" element={<Page title="Sales" />} />
-      <Route path="/services" element={<Page title="Services & Repairs" />} />
-      <Route path="/customers" element={<Page title="Customers" />} />
-      <Route path="/warranties" element={<Page title="Warranties" />} />
-      <Route path="/reports" element={<Page title="Reports & Analytics" />} />
-      <Route path="/settings" element={<Page title="Settings" />} />
+
+      {/* Public route */}
+      <Route path="/signin" element={<SignIn />} />
+
+      {/* Protected application routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Page title="Dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <Page title="Products" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sales"
+        element={
+          <ProtectedRoute>
+            <Page title="Sales" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/services"
+        element={
+          <ProtectedRoute>
+            <Page title="Services & Repairs" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customers"
+        element={
+          <ProtectedRoute>
+            <Page title="Customers" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/warranties"
+        element={
+          <ProtectedRoute>
+            <Page title="Warranties" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Page title="Reports & Analytics" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Page title="Settings" />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
       <Route path="*" element={<Page title="Not Found" />} />
     </Routes>
   );
